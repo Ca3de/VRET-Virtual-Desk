@@ -1,28 +1,24 @@
 {
-  "manifest_version": 3,
+  "manifest_version": 2,
   "name": "ALPS Data Fetcher for Virtual Desk",
   "version": "1.0.0",
   "description": "Fetches ALPS workforce data and auto-fills Virtual Desk Attendance Dashboard",
   "browser_specific_settings": {
     "gecko": {
       "id": "alps-data-fetcher@virtualdesk.local",
-      "strict_min_version": "140.0",
-      "data_collection_permissions": {
-        "required": []
-      }
+      "strict_min_version": "57.0"
     }
   },
   "permissions": [
     "storage",
-    "cookies"
-  ],
-  "host_permissions": [
+    "cookies",
     "https://alps-iad.iad.proxy.amazon.com/*",
     "https://iad.alps-basecamp.lamps.amazon.dev/*",
     "*://*/*"
   ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["background.js"],
+    "persistent": false
   },
   "content_scripts": [
     {
@@ -31,7 +27,7 @@
       "run_at": "document_end"
     }
   ],
-  "action": {
+  "browser_action": {
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icon16.png",
