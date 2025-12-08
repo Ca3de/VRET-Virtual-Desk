@@ -52,20 +52,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
       if (response.success && response.data) {
-        // Show preview
+        // Show preview using textContent (safer than innerHTML)
         dataPreview.classList.add('show');
-        dataPreview.innerHTML = `
-          <strong>Data Retrieved:</strong><br>
-          Volume Forecast: ${response.data.volumeForecast || 'N/A'}<br>
-          Scheduled: ${response.data.scheduled || 'N/A'}<br>
-          Absence Forecast: ${response.data.absenceForecast || 'N/A'}<br>
-          VTO: ${response.data.vto || '0'}<br>
-          VET: ${response.data.vet || '0'}<br>
-          Amazon Ready: ${response.data.amazonReady || 'N/A'}<br>
-          Labor Share: ${response.data.laborShare || 'N/A'}<br>
-          <br>
-          <em style="color: #50c878;">Data copied to clipboard!</em>
-        `;
+        dataPreview.textContent = 'Data Retrieved:\n' +
+          'Volume Forecast: ' + (response.data.volumeForecast || 'N/A') + '\n' +
+          'Scheduled: ' + (response.data.scheduled || 'N/A') + '\n' +
+          'Absence Forecast: ' + (response.data.absenceForecast || 'N/A') + '\n' +
+          'VTO: ' + (response.data.vto || '0') + '\n' +
+          'VET: ' + (response.data.vet || '0') + '\n' +
+          'Amazon Ready: ' + (response.data.amazonReady || 'N/A') + '\n' +
+          'Labor Share: ' + (response.data.laborShare || 'N/A') + '\n\n' +
+          'Data copied to clipboard!';
 
         // Copy to clipboard
         const jsonStr = JSON.stringify(response.data);
@@ -88,7 +85,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } catch (error) {
       dataPreview.classList.add('show');
-      dataPreview.innerHTML = `<span style="color: #e0115f;">Error: ${error.message}</span>`;
+      dataPreview.textContent = 'Error: ' + error.message;
+      dataPreview.style.color = '#e0115f';
       fetchBtn.textContent = 'Fetch ALPS Data';
       fetchBtn.disabled = false;
     }
