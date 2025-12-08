@@ -128,18 +128,18 @@ server {
 
 ## ALPS Data Import
 
-The Workforce tab includes an ALPS Data Import section for Vendor Returns (Night shift):
+The Attendance Dashboard includes an **Import ALPS Data** button for quick data entry:
 
 1. Navigate to the **Workforce** tab
-2. Find the **ALPS Data Import** section
-3. Enter metrics from ALPS Daily View:
-   - Volume Forecast / Capacity
-   - Assignments Forecast / Actual
-   - Absence Forecast
-   - VTO
-   - Amazon Ready, VET, Labor Share (hours)
-4. Click **Auto-Fill Dashboard** to populate the Attendance Dashboard
-5. Data is automatically saved to browser storage
+2. Scroll to the **Attendance Dashboard (VRETS)** section
+3. Click the **"+ Import ALPS Data"** button in the header
+4. In the modal dialog, enter metrics:
+   - Volume Forecast, Scheduled HC, Absence Forecast, VTO
+   - Amazon Ready (Flex), VET, Labor Share (hours)
+5. **Option A**: Enter values manually in the fields
+6. **Option B**: Paste JSON from ALPS Network tab (F12 > Network > XHR) and click "Parse JSON"
+7. Click **"Apply to Dashboard"** to auto-fill all fields
+8. Data is automatically saved to browser storage and persists across sessions
 
 ## Data Sources
 
