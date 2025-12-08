@@ -2663,11 +2663,138 @@
                     </div>
                 </div>
 
+                <!-- ALPS Data Import Section -->
+                <div class="alps-data-import" style="margin-top: 3rem;">
+                    <div style="background: linear-gradient(135deg, rgba(26, 26, 26, 0.6) 0%, rgba(45, 45, 45, 0.3) 100%); border: 1px solid var(--border-subtle); padding: 2rem;">
+                        <h3 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--luxury-gold); margin-bottom: 1.5rem; text-align: center;">ALPS Data Import (Vendor Returns - Night)</h3>
+
+                        <!-- Instructions -->
+                        <div style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(212, 175, 55, 0.05); border-left: 3px solid var(--luxury-gold);">
+                            <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
+                                <strong style="color: var(--luxury-gold);">Instructions:</strong> Enter data from ALPS Daily View for <strong>Vendor Returns</strong> department and <strong>Night</strong> shift.
+                                The values will auto-fill the Attendance Dashboard below. Navigate to ALPS → Vendor Returns → Night → Current Day.
+                            </div>
+                        </div>
+
+                        <!-- ALPS Data Entry Grid -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+
+                            <!-- Volume Section -->
+                            <div style="padding: 1.5rem; background: rgba(10, 10, 10, 0.3); border: 1px solid rgba(212, 175, 55, 0.1);">
+                                <h4 style="color: var(--luxury-gold); margin-bottom: 1rem; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Volume (ALPS)</h4>
+                                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <label style="color: var(--text-secondary); font-size: 0.8rem; min-width: 90px;">Forecast:</label>
+                                        <input type="number" id="alps-volume-forecast" placeholder="e.g. 31880"
+                                               style="flex: 1; padding: 0.6rem; background: rgba(26, 26, 26, 0.8); border: 1px solid var(--border-subtle); color: var(--text-primary); font-size: 0.9rem;"
+                                               oninput="saveAlpsData()">
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <label style="color: var(--text-secondary); font-size: 0.8rem; min-width: 90px;">Capacity:</label>
+                                        <input type="number" id="alps-volume-capacity" placeholder="e.g. 31880"
+                                               style="flex: 1; padding: 0.6rem; background: rgba(26, 26, 26, 0.8); border: 1px solid var(--border-subtle); color: var(--text-primary); font-size: 0.9rem;"
+                                               oninput="saveAlpsData()">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Assignments Section -->
+                            <div style="padding: 1.5rem; background: rgba(10, 10, 10, 0.3); border: 1px solid rgba(212, 175, 55, 0.1);">
+                                <h4 style="color: var(--luxury-gold); margin-bottom: 1rem; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Assignments (Scheduled HC)</h4>
+                                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <label style="color: var(--text-secondary); font-size: 0.8rem; min-width: 90px;">Forecast:</label>
+                                        <input type="number" id="alps-assignments-forecast" placeholder="e.g. 52008"
+                                               style="flex: 1; padding: 0.6rem; background: rgba(26, 26, 26, 0.8); border: 1px solid var(--border-subtle); color: var(--text-primary); font-size: 0.9rem;"
+                                               oninput="saveAlpsData()">
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <label style="color: var(--text-secondary); font-size: 0.8rem; min-width: 90px;">Actual:</label>
+                                        <input type="number" id="alps-assignments-actual" placeholder="e.g. 52008"
+                                               style="flex: 1; padding: 0.6rem; background: rgba(26, 26, 26, 0.8); border: 1px solid var(--border-subtle); color: var(--text-primary); font-size: 0.9rem;"
+                                               oninput="saveAlpsData()">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Absence & VTO Section -->
+                            <div style="padding: 1.5rem; background: rgba(10, 10, 10, 0.3); border: 1px solid rgba(212, 175, 55, 0.1);">
+                                <h4 style="color: var(--luxury-gold); margin-bottom: 1rem; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Absence & VTO</h4>
+                                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <label style="color: var(--text-secondary); font-size: 0.8rem; min-width: 90px;">Absence Fcst:</label>
+                                        <input type="number" id="alps-absence-forecast" placeholder="e.g. 5"
+                                               style="flex: 1; padding: 0.6rem; background: rgba(26, 26, 26, 0.8); border: 1px solid var(--border-subtle); color: var(--text-primary); font-size: 0.9rem;"
+                                               oninput="saveAlpsData()">
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <label style="color: var(--text-secondary); font-size: 0.8rem; min-width: 90px;">VTO:</label>
+                                        <input type="number" id="alps-vto" placeholder="e.g. 0"
+                                               style="flex: 1; padding: 0.6rem; background: rgba(26, 26, 26, 0.8); border: 1px solid var(--border-subtle); color: var(--text-primary); font-size: 0.9rem;"
+                                               oninput="saveAlpsData()">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Forecast/ALPS Section -->
+                            <div style="padding: 1.5rem; background: rgba(10, 10, 10, 0.3); border: 1px solid rgba(212, 175, 55, 0.1);">
+                                <h4 style="color: var(--luxury-gold); margin-bottom: 1rem; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Forecast/ALPS (Hours)</h4>
+                                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <label style="color: var(--text-secondary); font-size: 0.8rem; min-width: 90px;">Amazon Ready:</label>
+                                        <input type="number" id="alps-amazon-ready" placeholder="e.g. 100"
+                                               style="flex: 1; padding: 0.6rem; background: rgba(26, 26, 26, 0.8); border: 1px solid var(--border-subtle); color: var(--text-primary); font-size: 0.9rem;"
+                                               oninput="saveAlpsData()">
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <label style="color: var(--text-secondary); font-size: 0.8rem; min-width: 90px;">VET:</label>
+                                        <input type="number" id="alps-vet" placeholder="e.g. 50"
+                                               style="flex: 1; padding: 0.6rem; background: rgba(26, 26, 26, 0.8); border: 1px solid var(--border-subtle); color: var(--text-primary); font-size: 0.9rem;"
+                                               oninput="saveAlpsData()">
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <label style="color: var(--text-secondary); font-size: 0.8rem; min-width: 90px;">Labor Share:</label>
+                                        <input type="number" id="alps-labor-share" placeholder="e.g. 25"
+                                               style="flex: 1; padding: 0.6rem; background: rgba(26, 26, 26, 0.8); border: 1px solid var(--border-subtle); color: var(--text-primary); font-size: 0.9rem;"
+                                               oninput="saveAlpsData()">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                            <button onclick="autoFillAttendanceDashboard()"
+                                    style="padding: 0.75rem 2rem; background: var(--gradient-gold); border: none; color: var(--luxury-black); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem; cursor: pointer; transition: transform 0.2s;">
+                                Auto-Fill Dashboard
+                            </button>
+                            <button onclick="clearAlpsData()"
+                                    style="padding: 0.75rem 2rem; background: rgba(224, 17, 95, 0.1); border: 1px solid var(--accent-ruby); color: var(--accent-ruby); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem; cursor: pointer; transition: transform 0.2s;">
+                                Clear All
+                            </button>
+                            <a href="https://iad.alps-basecamp.lamps.amazon.dev/IND8/plan/daily" target="_blank"
+                               style="padding: 0.75rem 2rem; background: rgba(80, 200, 120, 0.1); border: 1px solid var(--accent-emerald); color: var(--accent-emerald); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem; cursor: pointer; text-decoration: none; display: inline-block;">
+                                Open ALPS
+                            </a>
+                        </div>
+
+                        <!-- Quick Reference -->
+                        <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(10, 10, 10, 0.3); border: 1px solid rgba(212, 175, 55, 0.1);">
+                            <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">
+                                <strong style="color: var(--text-secondary);">Quick Reference:</strong>
+                                Volume Forecast → from "Forecast" row under Volume section |
+                                Scheduled → from "Forecast" row under Assignments section |
+                                Data auto-saved to browser storage
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Attendance Dashboard Section -->
                 <div class="attendance-dashboard" style="margin-top: 3rem;">
                     <div style="background: linear-gradient(135deg, rgba(26, 26, 26, 0.6) 0%, rgba(45, 45, 45, 0.3) 100%); border: 1px solid var(--border-subtle); padding: 2rem;">
                         <h3 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--luxury-gold); margin-bottom: 2rem; text-align: center;">Attendance Dashboard (VRETS)</h3>
-                        
+
                         <!-- Export menu for Attendance Dashboard (VRETS) -->
                         <div class="vrets-export" id="attendance-export-menu">
                           <button class="vrets-btn" aria-haspopup="true" aria-expanded="false">
@@ -4162,6 +4289,198 @@
                 resultEl.style.color = 'var(--text-secondary)';
             }
         }
+
+        // ========= ALPS DATA IMPORT FUNCTIONS =========
+        const ALPS_STORAGE_KEY = 'ind8_alps_data_vendor_returns_night';
+
+        // Save ALPS data to localStorage
+        function saveAlpsData() {
+            const alpsData = {
+                volumeForecast: document.getElementById('alps-volume-forecast')?.value || '',
+                volumeCapacity: document.getElementById('alps-volume-capacity')?.value || '',
+                assignmentsForecast: document.getElementById('alps-assignments-forecast')?.value || '',
+                assignmentsActual: document.getElementById('alps-assignments-actual')?.value || '',
+                absenceForecast: document.getElementById('alps-absence-forecast')?.value || '',
+                vto: document.getElementById('alps-vto')?.value || '',
+                amazonReady: document.getElementById('alps-amazon-ready')?.value || '',
+                vet: document.getElementById('alps-vet')?.value || '',
+                laborShare: document.getElementById('alps-labor-share')?.value || '',
+                lastUpdated: new Date().toISOString()
+            };
+            localStorage.setItem(ALPS_STORAGE_KEY, JSON.stringify(alpsData));
+        }
+
+        // Load ALPS data from localStorage
+        function loadAlpsData() {
+            try {
+                const saved = localStorage.getItem(ALPS_STORAGE_KEY);
+                if (saved) {
+                    const alpsData = JSON.parse(saved);
+
+                    // Populate ALPS input fields
+                    if (document.getElementById('alps-volume-forecast')) {
+                        document.getElementById('alps-volume-forecast').value = alpsData.volumeForecast || '';
+                    }
+                    if (document.getElementById('alps-volume-capacity')) {
+                        document.getElementById('alps-volume-capacity').value = alpsData.volumeCapacity || '';
+                    }
+                    if (document.getElementById('alps-assignments-forecast')) {
+                        document.getElementById('alps-assignments-forecast').value = alpsData.assignmentsForecast || '';
+                    }
+                    if (document.getElementById('alps-assignments-actual')) {
+                        document.getElementById('alps-assignments-actual').value = alpsData.assignmentsActual || '';
+                    }
+                    if (document.getElementById('alps-absence-forecast')) {
+                        document.getElementById('alps-absence-forecast').value = alpsData.absenceForecast || '';
+                    }
+                    if (document.getElementById('alps-vto')) {
+                        document.getElementById('alps-vto').value = alpsData.vto || '';
+                    }
+                    if (document.getElementById('alps-amazon-ready')) {
+                        document.getElementById('alps-amazon-ready').value = alpsData.amazonReady || '';
+                    }
+                    if (document.getElementById('alps-vet')) {
+                        document.getElementById('alps-vet').value = alpsData.vet || '';
+                    }
+                    if (document.getElementById('alps-labor-share')) {
+                        document.getElementById('alps-labor-share').value = alpsData.laborShare || '';
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading ALPS data:', e);
+            }
+        }
+
+        // Clear all ALPS data
+        function clearAlpsData() {
+            if (confirm('Clear all ALPS data and Attendance Dashboard inputs?')) {
+                // Clear ALPS inputs
+                const alpsInputs = [
+                    'alps-volume-forecast', 'alps-volume-capacity',
+                    'alps-assignments-forecast', 'alps-assignments-actual',
+                    'alps-absence-forecast', 'alps-vto',
+                    'alps-amazon-ready', 'alps-vet', 'alps-labor-share'
+                ];
+                alpsInputs.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+
+                // Clear attendance dashboard inputs
+                const attendanceInputs = [
+                    'volume-forecast', 'scheduled', 'absence', 'actual', 'vto',
+                    'flexActual', 'flexAlps', 'vetActual', 'vetAlps', 'lsActual', 'lsAlps'
+                ];
+                attendanceInputs.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+
+                // Reset calculated values
+                const calcFields = ['expectedHeadcount', 'attendanceRate', 'flexResult', 'vetResult', 'lsResult'];
+                calcFields.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.textContent = '--';
+                        el.style.color = 'var(--accent-emerald)';
+                    }
+                });
+
+                // Reset summary fields
+                if (document.getElementById('volume-summary')) {
+                    document.getElementById('volume-summary').textContent = '--';
+                }
+                if (document.getElementById('hc-summary')) {
+                    document.getElementById('hc-summary').textContent = '--';
+                }
+                if (document.getElementById('attendance-summary')) {
+                    document.getElementById('attendance-summary').textContent = '--%';
+                }
+
+                // Clear localStorage
+                localStorage.removeItem(ALPS_STORAGE_KEY);
+            }
+        }
+
+        // Auto-fill Attendance Dashboard from ALPS data
+        function autoFillAttendanceDashboard() {
+            // Get ALPS input values
+            const volumeForecast = document.getElementById('alps-volume-forecast')?.value || '';
+            const assignmentsForecast = document.getElementById('alps-assignments-forecast')?.value || '';
+            const absenceForecast = document.getElementById('alps-absence-forecast')?.value || '';
+            const vto = document.getElementById('alps-vto')?.value || '';
+            const amazonReady = document.getElementById('alps-amazon-ready')?.value || '';
+            const vetForecast = document.getElementById('alps-vet')?.value || '';
+            const laborShare = document.getElementById('alps-labor-share')?.value || '';
+
+            // Fill Volume Forecast
+            if (volumeForecast && document.getElementById('volume-forecast')) {
+                document.getElementById('volume-forecast').value = volumeForecast;
+                // Update volume summary
+                if (document.getElementById('volume-summary')) {
+                    document.getElementById('volume-summary').textContent = parseFloat(volumeForecast).toLocaleString();
+                }
+            }
+
+            // Fill Scheduled (from Assignments Forecast)
+            if (assignmentsForecast && document.getElementById('scheduled')) {
+                document.getElementById('scheduled').value = assignmentsForecast;
+            }
+
+            // Fill Absence Forecast
+            if (absenceForecast && document.getElementById('absence')) {
+                document.getElementById('absence').value = absenceForecast;
+            }
+
+            // Fill VTO in attendance section
+            if (vto && document.getElementById('vto')) {
+                document.getElementById('vto').value = vto;
+            }
+
+            // Fill Forecast/ALPS values in the table
+            if (amazonReady && document.getElementById('flexAlps')) {
+                document.getElementById('flexAlps').value = amazonReady;
+            }
+
+            if (vetForecast && document.getElementById('vetAlps')) {
+                document.getElementById('vetAlps').value = vetForecast;
+            }
+
+            if (laborShare && document.getElementById('lsAlps')) {
+                document.getElementById('lsAlps').value = laborShare;
+            }
+
+            // Auto-calculate headcount if we have scheduled and absence
+            if (assignmentsForecast && absenceForecast) {
+                calculateHeadcount();
+            }
+
+            // Save the data
+            saveAlpsData();
+
+            // Visual feedback
+            const btn = event?.target;
+            if (btn) {
+                const originalText = btn.textContent;
+                btn.textContent = 'Filled!';
+                btn.style.background = 'var(--accent-emerald)';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = 'var(--gradient-gold)';
+                }, 1500);
+            }
+        }
+
+        // Load ALPS data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAlpsData();
+        });
+
+        // Also load immediately if DOM is already ready
+        if (document.readyState !== 'loading') {
+            loadAlpsData();
+        }
+
 	// --- REPLACE existing exportData() with this ---
     // ========= CONFIG =========
     const ATTENDANCE = {
