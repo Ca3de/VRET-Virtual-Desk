@@ -3,6 +3,12 @@
   "name": "ALPS Data Fetcher for Virtual Desk",
   "version": "1.0.0",
   "description": "Fetches ALPS workforce data and auto-fills Virtual Desk Attendance Dashboard",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "alps-data-fetcher@virtualdesk.local",
+      "strict_min_version": "109.0"
+    }
+  },
   "permissions": [
     "storage",
     "cookies"
@@ -13,7 +19,7 @@
     "*://*/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "scripts": ["background.js"]
   },
   "content_scripts": [
     {
