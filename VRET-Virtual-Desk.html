@@ -4176,6 +4176,85 @@
         // ========= ALPS DATA IMPORT MODAL FUNCTIONS =========
         const ALPS_STORAGE_KEY = 'ind8_alps_data_vendor_returns_night';
 
+        // Check if ALPS extension is installed
+        function isAlpsExtensionInstalled() {
+            return window.ALPS_EXTENSION_INSTALLED === true ||
+                   document.getElementById('alps-extension-installed') !== null;
+        }
+
+        // Auto-fetch ALPS data using the browser extension
+        async function autoFetchAlpsData() {
+            const statusEl = document.getElementById('alps-fetch-status');
+            const btn = event?.target;
+
+            if (!isAlpsExtensionInstalled()) {
+                if (statusEl) {
+                    statusEl.textContent = 'Extension not installed. Install ALPS Data Fetcher extension first.';
+                    statusEl.style.color = 'var(--accent-ruby)';
+                }
+                alert('ALPS Data Fetcher extension is not installed.\n\nPlease install the extension from the alps-extension folder, then reload this page.');
+                return;
+            }
+
+            // Update button state
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Fetching from ALPS...';
+            }
+            if (statusEl) {
+                statusEl.textContent = 'Connecting to ALPS...';
+                statusEl.style.color = 'var(--luxury-gold)';
+            }
+
+            try {
+                // Send message to extension via postMessage
+                const response = await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Request timed out. Make sure ALPS extension is active.'));
+                    }, 15000);
+
+                    window.addEventListener('message', function handler(event) {
+                        if (event.data.type === 'ALPS_FETCH_RESPONSE') {
+                            clearTimeout(timeout);
+                            window.removeEventListener('message', handler);
+                            resolve(event.data);
+                        }
+                    });
+
+                    window.postMessage({ type: 'ALPS_FETCH_REQUEST', date: new Date().toISOString().split('T')[0] }, '*');
+                });
+
+                if (response.success && response.data) {
+                    // Populate modal fields
+                    if (response.data.volumeForecast) document.getElementById('alps-modal-volume').value = response.data.volumeForecast;
+                    if (response.data.scheduled) document.getElementById('alps-modal-scheduled').value = response.data.scheduled;
+                    if (response.data.absenceForecast) document.getElementById('alps-modal-absence').value = response.data.absenceForecast;
+                    if (response.data.vto) document.getElementById('alps-modal-vto').value = response.data.vto;
+                    if (response.data.amazonReady) document.getElementById('alps-modal-flex').value = response.data.amazonReady;
+                    if (response.data.vet) document.getElementById('alps-modal-vet').value = response.data.vet;
+                    if (response.data.laborShare) document.getElementById('alps-modal-ls').value = response.data.laborShare;
+
+                    if (statusEl) {
+                        statusEl.textContent = 'Data fetched successfully! Click "Apply to Dashboard" to fill fields.';
+                        statusEl.style.color = 'var(--accent-emerald)';
+                    }
+                } else {
+                    throw new Error(response.error || 'Failed to fetch data');
+                }
+            } catch (error) {
+                console.error('Auto-fetch error:', error);
+                if (statusEl) {
+                    statusEl.textContent = 'Error: ' + error.message;
+                    statusEl.style.color = 'var(--accent-ruby)';
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Auto-Fetch from ALPS';
+                }
+            }
+        }
+
         // Open ALPS import modal
         function openAlpsImportModal() {
             const modal = document.getElementById('alps-import-modal');
@@ -4183,6 +4262,32 @@
                 modal.style.display = 'flex';
                 // Load any previously saved data into modal fields
                 loadAlpsDataToModal();
+                // Update extension status
+                updateExtensionStatus();
+            }
+        }
+
+        // Update extension installation status in modal
+        function updateExtensionStatus() {
+            const statusEl = document.getElementById('alps-fetch-status');
+            const autoFetchBtn = document.getElementById('alps-auto-fetch-btn');
+
+            if (isAlpsExtensionInstalled()) {
+                if (statusEl) {
+                    statusEl.textContent = 'Extension installed - Ready to auto-fetch';
+                    statusEl.style.color = 'var(--accent-emerald)';
+                }
+                if (autoFetchBtn) {
+                    autoFetchBtn.style.display = 'inline-block';
+                }
+            } else {
+                if (statusEl) {
+                    statusEl.textContent = 'Extension not installed - Manual entry only';
+                    statusEl.style.color = 'var(--text-muted)';
+                }
+                if (autoFetchBtn) {
+                    autoFetchBtn.style.opacity = '0.5';
+                }
             }
         }
 
@@ -4653,10 +4758,32 @@
             <button onclick="closeAlpsImportModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
 
             <h3 style="font-family: 'Playfair Display', serif; color: var(--luxury-gold); margin-bottom: 1rem;">Import ALPS Data</h3>
-            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem; line-height: 1.5;">
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem; line-height: 1.5;">
                 <strong>Vendor Returns - Night Shift</strong><br>
-                Enter the values from ALPS manually or paste JSON from ALPS Network tab (F12 > Network > XHR).
+                Auto-fetch with extension, enter manually, or paste JSON.
             </p>
+
+            <!-- Auto-Fetch Section -->
+            <div style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(80, 200, 120, 0.05); border: 1px solid rgba(80, 200, 120, 0.2); border-radius: 4px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div>
+                        <div style="font-weight: 600; color: var(--accent-emerald); font-size: 0.85rem;">Auto-Fetch from ALPS</div>
+                        <div id="alps-fetch-status" style="font-size: 0.7rem; color: var(--text-muted);">Checking extension...</div>
+                    </div>
+                    <button id="alps-auto-fetch-btn" onclick="autoFetchAlpsData()" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #50c878 0%, #3da35d 100%); border: none; color: #fff; font-weight: 600; font-size: 0.75rem; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Auto-Fetch from ALPS
+                    </button>
+                </div>
+                <div style="margin-top: 0.75rem; font-size: 0.65rem; color: var(--text-muted);">
+                    Requires <a href="alps-extension/" style="color: var(--luxury-gold);">ALPS Data Fetcher</a> browser extension. One-click fetch without opening ALPS.
+                </div>
+            </div>
+
+            <!-- Manual Entry Divider -->
+            <div style="text-align: center; margin: 1rem 0; color: var(--text-muted); font-size: 0.7rem;">
+                <span style="background: #1a1a1a; padding: 0 0.75rem;">OR ENTER MANUALLY</span>
+                <div style="border-top: 1px solid var(--border-subtle); margin-top: -0.5rem;"></div>
+            </div>
 
             <!-- Quick Manual Entry -->
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem;">

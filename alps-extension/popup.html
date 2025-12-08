@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      padding: 16px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #333;
+    }
+    .header h1 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #d4af37;
+    }
+    .status {
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+    .status.connected {
+      background: rgba(80, 200, 120, 0.1);
+      border: 1px solid #50c878;
+      color: #50c878;
+    }
+    .status.disconnected {
+      background: rgba(224, 17, 95, 0.1);
+      border: 1px solid #e0115f;
+      color: #e0115f;
+    }
+    .status.checking {
+      background: rgba(212, 175, 55, 0.1);
+      border: 1px solid #d4af37;
+      color: #d4af37;
+    }
+    .config {
+      background: #222;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .config-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 11px;
+    }
+    .config-row .label {
+      color: #888;
+    }
+    .config-row .value {
+      color: #d4af37;
+      font-weight: 500;
+    }
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: opacity 0.2s;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #d4af37 0%, #b8962e 100%);
+      color: #1a1a1a;
+    }
+    .btn-secondary {
+      background: #333;
+      color: #e0e0e0;
+      border: 1px solid #444;
+    }
+    .data-preview {
+      background: #222;
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 10px;
+      font-family: monospace;
+      max-height: 150px;
+      overflow-y: auto;
+      display: none;
+    }
+    .data-preview.show {
+      display: block;
+    }
+    .footer {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #333;
+      font-size: 10px;
+      color: #666;
+      text-align: center;
+    }
+    .footer a {
+      color: #d4af37;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>ALPS Data Fetcher</h1>
+  </div>
+
+  <div id="status" class="status checking">
+    Checking ALPS connection...
+  </div>
+
+  <div class="config">
+    <div class="config-row">
+      <span class="label">Site:</span>
+      <span class="value">IND8</span>
+    </div>
+    <div class="config-row">
+      <span class="label">Department:</span>
+      <span class="value">Vendor Returns</span>
+    </div>
+    <div class="config-row">
+      <span class="label">Shift:</span>
+      <span class="value">Night</span>
+    </div>
+    <div class="config-row">
+      <span class="label">Date:</span>
+      <span class="value" id="targetDate">Today</span>
+    </div>
+  </div>
+
+  <button id="fetchBtn" class="btn btn-primary" disabled>
+    Fetch ALPS Data
+  </button>
+
+  <button id="openAlpsBtn" class="btn btn-secondary">
+    Open ALPS Daily View
+  </button>
+
+  <div id="dataPreview" class="data-preview"></div>
+
+  <div class="footer">
+    <a href="https://iad.alps-basecamp.lamps.amazon.dev/IND8/plan/daily" target="_blank">ALPS</a> |
+    Virtual Desk Extension v1.0.0
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

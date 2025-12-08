@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head><title>Icon Generator</title></head>
+<body>
+<canvas id="c16" width="16" height="16"></canvas>
+<canvas id="c48" width="48" height="48"></canvas>
+<canvas id="c128" width="128" height="128"></canvas>
+<script>
+function drawIcon(canvas) {
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width;
+  const scale = size / 128;
+  
+  // Background
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0, 0, size, size);
+  
+  // Gold circle
+  ctx.beginPath();
+  ctx.arc(size/2, size/2, size*0.4, 0, Math.PI * 2);
+  ctx.fillStyle = '#d4af37';
+  ctx.fill();
+  
+  // Letter A
+  ctx.fillStyle = '#1a1a1a';
+  ctx.font = `bold ${size*0.5}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('A', size/2, size/2 + size*0.05);
+}
+['c16','c48','c128'].forEach(id => {
+  const c = document.getElementById(id);
+  drawIcon(c);
+  const link = document.createElement('a');
+  link.download = 'icon' + c.width + '.png';
+  link.href = c.toDataURL();
+  link.click();
+});
+</script>
+</body>
+</html>
