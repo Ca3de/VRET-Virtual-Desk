@@ -2101,13 +2101,54 @@
             cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='6' fill='%23e17055'/%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='%23e17055' stroke-width='1' opacity='0.4'/%3E%3C/svg%3E") 10 10, pointer !important;
         }
 
-        /* Page-level magnifying lens effect on idle hover */
-        body {
-            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            overflow-x: hidden;
+        /* ========== LOCAL MAGNIFYING LENS ========== */
+        /* Frosted glass ring — sits behind the lens */
+        #skeu-frost {
+            position: fixed;
+            pointer-events: none;
+            z-index: 10000;
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            background: rgba(224, 229, 236, 0.3);
+            border: 1px solid rgba(255,255,255,0.35);
+            box-shadow:
+                6px 6px 14px rgba(0,0,0,0.08),
+                -4px -4px 10px rgba(255,255,255,0.5);
         }
-        body.skeu-magnify {
-            transform: scale(1.045);
+        #skeu-frost.active { opacity: 1; }
+
+        /* Lens interior — enhances the view beneath it */
+        #skeu-lens {
+            position: fixed;
+            pointer-events: none;
+            z-index: 10001;
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+            backdrop-filter: brightness(1.08) contrast(1.12) saturate(1.2);
+            -webkit-backdrop-filter: brightness(1.08) contrast(1.12) saturate(1.2);
+            border: 2px solid rgba(255,255,255,0.55);
+            box-shadow:
+                inset 0 2px 6px rgba(255,255,255,0.5),
+                inset 0 -2px 6px rgba(0,0,0,0.06),
+                0 0 0 1px rgba(163,177,198,0.2);
+        }
+        #skeu-lens.active { opacity: 1; }
+
+        /* Glass highlight reflection */
+        #skeu-lens::after {
+            content: '';
+            position: absolute;
+            top: 7%;
+            left: 14%;
+            width: 38%;
+            height: 20%;
+            border-radius: 50%;
+            background: linear-gradient(155deg, rgba(255,255,255,0.5), transparent);
+            pointer-events: none;
         }
     </style>
 </head>
@@ -5298,54 +5339,75 @@
             loadAlpsDataOnPageLoad();
         }
 
-        // ========= CUSTOM CURSOR: PAGE MAGNIFY ON IDLE HOVER =========
-        (function initPageMagnify() {
-            let idleTimer = null;
-            let isZoomed = false;
-            const IDLE_MS = 2000;
-            const clickableSelector = 'a, button, [onclick], .nav-item, .luxury-link, .quick-action-btn, .add-task-btn, .calc-btn, .remove-task, .modal-button, .favorite-item, .suggestion-item, .metric-card[onclick], .favorite-star, .link-favorite, select, input[type="checkbox"]';
+        // ========= LOCAL MAGNIFYING LENS — GLASSMORPHISM CIRCLE =========
+        (function initMagnifyingLens() {
+            var idleTimer = null;
+            var isActive = false;
+            var lastX = 0, lastY = 0;
+            var frostEl = null, lensEl = null;
 
-            function applyZoom(x, y) {
-                // Set transform-origin to cursor position so the page
-                // zooms toward where you're looking, pushing content
-                // away from that point (left cursor → page shifts right, etc.)
-                const xPct = (x / window.innerWidth) * 100;
-                const yPct = ((y + window.scrollY) / document.documentElement.scrollHeight) * 100;
-                document.body.style.transformOrigin = xPct + '% ' + yPct + '%';
-                document.body.classList.add('skeu-magnify');
-                isZoomed = true;
+            var IDLE_MS = 2000;
+            var LENS_D = 180;          // inner lens diameter
+            var FROST_RING = 14;       // frosted glass border width
+            var FROST_D = LENS_D + FROST_RING * 2;
+
+            var CLICKABLE = 'a, button, [onclick], .nav-item, .luxury-link, .quick-action-btn, .add-task-btn, .calc-btn, .remove-task, .modal-button, .favorite-item, .suggestion-item, .metric-card[onclick], .favorite-star, .link-favorite, select, input[type="checkbox"]';
+
+            // Create the lens elements once
+            function ensureElements() {
+                if (frostEl) return;
+                frostEl = document.createElement('div');
+                frostEl.id = 'skeu-frost';
+                frostEl.style.width = FROST_D + 'px';
+                frostEl.style.height = FROST_D + 'px';
+                document.body.appendChild(frostEl);
+
+                lensEl = document.createElement('div');
+                lensEl.id = 'skeu-lens';
+                lensEl.style.width = LENS_D + 'px';
+                lensEl.style.height = LENS_D + 'px';
+                document.body.appendChild(lensEl);
             }
 
-            function removeZoom() {
+            function showLens(x, y) {
+                ensureElements();
+                // Position frost ring (centered on cursor)
+                frostEl.style.left = (x - FROST_D / 2) + 'px';
+                frostEl.style.top  = (y - FROST_D / 2) + 'px';
+                frostEl.classList.add('active');
+                // Position inner lens (centered on cursor)
+                lensEl.style.left = (x - LENS_D / 2) + 'px';
+                lensEl.style.top  = (y - LENS_D / 2) + 'px';
+                lensEl.classList.add('active');
+                isActive = true;
+            }
+
+            function hideLens() {
                 clearTimeout(idleTimer);
-                if (isZoomed) {
-                    document.body.classList.remove('skeu-magnify');
-                    isZoomed = false;
-                }
+                if (!isActive) return;
+                if (frostEl) frostEl.classList.remove('active');
+                if (lensEl)  lensEl.classList.remove('active');
+                isActive = false;
             }
-
-            let lastX = 0, lastY = 0;
 
             document.addEventListener('mousemove', function(e) {
                 lastX = e.clientX;
                 lastY = e.clientY;
-                // Any mouse movement cancels the zoom
-                removeZoom();
 
-                // Check if we're over a clickable element
-                const clickable = e.target.closest(clickableSelector);
-                if (clickable) {
-                    clearTimeout(idleTimer);
+                // Any movement dismisses the lens
+                hideLens();
+
+                // If over a clickable element, start the idle timer
+                if (e.target.closest(CLICKABLE)) {
                     idleTimer = setTimeout(function() {
-                        applyZoom(lastX, lastY);
+                        showLens(lastX, lastY);
                     }, IDLE_MS);
                 }
             });
 
-            // Cancel on scroll, click, or mouse leaving the window
-            document.addEventListener('scroll', removeZoom);
-            document.addEventListener('click', removeZoom);
-            document.addEventListener('mouseleave', removeZoom);
+            document.addEventListener('scroll', hideLens);
+            document.addEventListener('click', hideLens);
+            document.addEventListener('mouseleave', hideLens);
         })();
 
 	// --- REPLACE existing exportData() with this ---
