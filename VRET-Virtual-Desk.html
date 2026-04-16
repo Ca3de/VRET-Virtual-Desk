@@ -2102,54 +2102,23 @@
         }
 
         /* ========== LOCAL MAGNIFYING LENS ========== */
-        /* Frosted glass ring — sits behind the lens */
-        #skeu-frost {
-            position: fixed;
-            pointer-events: none;
-            z-index: 10000;
-            border-radius: 50%;
-            opacity: 0;
-            transition: opacity 0.35s ease;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            background: rgba(224, 229, 236, 0.3);
-            border: 1px solid rgba(255,255,255,0.35);
-            box-shadow:
-                6px 6px 14px rgba(0,0,0,0.08),
-                -4px -4px 10px rgba(255,255,255,0.5);
-        }
-        #skeu-frost.active { opacity: 1; }
-
-        /* Lens interior — enhances the view beneath it */
+        /* Single element — clear interior, thin frosted edge */
         #skeu-lens {
             position: fixed;
             pointer-events: none;
             z-index: 10001;
             border-radius: 50%;
             opacity: 0;
-            transition: opacity 0.35s ease;
-            backdrop-filter: brightness(1.08) contrast(1.12) saturate(1.2);
-            -webkit-backdrop-filter: brightness(1.08) contrast(1.12) saturate(1.2);
-            border: 2px solid rgba(255,255,255,0.55);
+            transition: opacity 0.3s ease;
+            /* Completely clear inside */
+            background: transparent;
+            /* Paper-thin border with just a hint of frost */
+            border: 1px solid rgba(180, 190, 205, 0.45);
             box-shadow:
-                inset 0 2px 6px rgba(255,255,255,0.5),
-                inset 0 -2px 6px rgba(0,0,0,0.06),
-                0 0 0 1px rgba(163,177,198,0.2);
+                0 0 0 1px rgba(255,255,255,0.3),
+                0 0 12px 2px rgba(163,177,198,0.15);
         }
         #skeu-lens.active { opacity: 1; }
-
-        /* Glass highlight reflection */
-        #skeu-lens::after {
-            content: '';
-            position: absolute;
-            top: 7%;
-            left: 14%;
-            width: 38%;
-            height: 20%;
-            border-radius: 50%;
-            background: linear-gradient(155deg, rgba(255,255,255,0.5), transparent);
-            pointer-events: none;
-        }
     </style>
 </head>
 <body>
@@ -5339,29 +5308,19 @@
             loadAlpsDataOnPageLoad();
         }
 
-        // ========= LOCAL MAGNIFYING LENS — GLASSMORPHISM CIRCLE =========
+        // ========= LOCAL MAGNIFYING LENS =========
         (function initMagnifyingLens() {
             var idleTimer = null;
             var isActive = false;
             var lastX = 0, lastY = 0;
-            var frostEl = null, lensEl = null;
-
+            var lensEl = null;
             var IDLE_MS = 2000;
-            var LENS_D = 180;          // inner lens diameter
-            var FROST_RING = 14;       // frosted glass border width
-            var FROST_D = LENS_D + FROST_RING * 2;
+            var LENS_D = 400;  // big circle
 
             var CLICKABLE = 'a, button, [onclick], .nav-item, .luxury-link, .quick-action-btn, .add-task-btn, .calc-btn, .remove-task, .modal-button, .favorite-item, .suggestion-item, .metric-card[onclick], .favorite-star, .link-favorite, select, input[type="checkbox"]';
 
-            // Create the lens elements once
-            function ensureElements() {
-                if (frostEl) return;
-                frostEl = document.createElement('div');
-                frostEl.id = 'skeu-frost';
-                frostEl.style.width = FROST_D + 'px';
-                frostEl.style.height = FROST_D + 'px';
-                document.body.appendChild(frostEl);
-
+            function ensureEl() {
+                if (lensEl) return;
                 lensEl = document.createElement('div');
                 lensEl.id = 'skeu-lens';
                 lensEl.style.width = LENS_D + 'px';
@@ -5370,12 +5329,7 @@
             }
 
             function showLens(x, y) {
-                ensureElements();
-                // Position frost ring (centered on cursor)
-                frostEl.style.left = (x - FROST_D / 2) + 'px';
-                frostEl.style.top  = (y - FROST_D / 2) + 'px';
-                frostEl.classList.add('active');
-                // Position inner lens (centered on cursor)
+                ensureEl();
                 lensEl.style.left = (x - LENS_D / 2) + 'px';
                 lensEl.style.top  = (y - LENS_D / 2) + 'px';
                 lensEl.classList.add('active');
@@ -5385,19 +5339,14 @@
             function hideLens() {
                 clearTimeout(idleTimer);
                 if (!isActive) return;
-                if (frostEl) frostEl.classList.remove('active');
-                if (lensEl)  lensEl.classList.remove('active');
+                if (lensEl) lensEl.classList.remove('active');
                 isActive = false;
             }
 
             document.addEventListener('mousemove', function(e) {
                 lastX = e.clientX;
                 lastY = e.clientY;
-
-                // Any movement dismisses the lens
                 hideLens();
-
-                // If over a clickable element, start the idle timer
                 if (e.target.closest(CLICKABLE)) {
                     idleTimer = setTimeout(function() {
                         showLens(lastX, lastY);
