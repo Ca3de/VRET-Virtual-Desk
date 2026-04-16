@@ -5569,19 +5569,34 @@
           return;
         }
 
-        // Bake computed styles inline so the export matches the browser.
-        // CSS !important overrides fix the dark inline styles on-screen,
-        // but html-to-image can't resolve the cascade — so we temporarily
-        // stamp the real computed values onto each element before capture.
-        const els = section.querySelectorAll('*');
+        // Two-pass bake: read ALL computed styles first, THEN apply.
+        // One-pass mutates inline styles which breaks attribute-based CSS
+        // selectors for later elements in the same pass.
+        const els = [section, ...section.querySelectorAll('*')];
         const saved = [];
-        const props = ['background','backgroundColor','backgroundImage',
-                       'border','borderColor','borderRadius','boxShadow',
-                       'color','fontFamily'];
+        const computed = [];
+        const props = [
+          'background','backgroundColor','backgroundImage',
+          'border','borderTop','borderBottom','borderLeft','borderRight',
+          'borderColor','borderRadius','boxShadow',
+          'color','fontFamily','fontSize','fontWeight',
+          'padding','margin','outline','display',
+          'textTransform','letterSpacing','lineHeight',
+          'width','maxWidth','minWidth'
+        ];
+
+        // Pass 1: read everything while cascade is intact
         els.forEach(el => {
           saved.push(el.getAttribute('style'));
           const cs = window.getComputedStyle(el);
-          props.forEach(p => { el.style[p] = cs[p]; });
+          const vals = {};
+          props.forEach(p => { vals[p] = cs[p]; });
+          computed.push(vals);
+        });
+
+        // Pass 2: stamp computed values as inline styles
+        els.forEach((el, i) => {
+          props.forEach(p => { el.style[p] = computed[i][p]; });
         });
 
         let dataUrl;
@@ -5592,7 +5607,6 @@
             cacheBust: true
           });
         } finally {
-          // Restore originals no matter what
           els.forEach((el, i) => {
             if (saved[i] === null) el.removeAttribute('style');
             else el.setAttribute('style', saved[i]);
