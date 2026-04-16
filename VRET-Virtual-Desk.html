@@ -2102,7 +2102,7 @@
         }
 
         /* ========== LOCAL MAGNIFYING LENS ========== */
-        /* Single element — clear interior, thin frosted edge */
+        /* Single element — clear interior, thin frosted edge, clips magnified content */
         #skeu-lens {
             position: fixed;
             pointer-events: none;
@@ -2110,9 +2110,8 @@
             border-radius: 50%;
             opacity: 0;
             transition: opacity 0.3s ease;
-            /* Completely clear inside */
+            overflow: hidden;
             background: transparent;
-            /* Paper-thin border with just a hint of frost */
             border: 1px solid rgba(180, 190, 205, 0.45);
             box-shadow:
                 0 0 0 1px rgba(255,255,255,0.3),
@@ -5308,14 +5307,17 @@
             loadAlpsDataOnPageLoad();
         }
 
-        // ========= LOCAL MAGNIFYING LENS =========
+        // ========= LOCAL MAGNIFYING LENS WITH ZOOM =========
         (function initMagnifyingLens() {
             var idleTimer = null;
             var isActive = false;
             var lastX = 0, lastY = 0;
             var lensEl = null;
+            var snap = null;          // captured canvas
+            var capturing = false;
             var IDLE_MS = 2000;
-            var LENS_D = 400;  // big circle
+            var LENS_D = 400;
+            var ZOOM = 1.25;
 
             var CLICKABLE = 'a, button, [onclick], .nav-item, .luxury-link, .quick-action-btn, .add-task-btn, .calc-btn, .remove-task, .modal-button, .favorite-item, .suggestion-item, .metric-card[onclick], .favorite-star, .link-favorite, select, input[type="checkbox"]';
 
@@ -5328,10 +5330,44 @@
                 document.body.appendChild(lensEl);
             }
 
+            // Pre-capture the viewport as soon as cursor lands on a clickable
+            function preCapture() {
+                if (capturing || snap || !window.html2canvas) return;
+                capturing = true;
+                html2canvas(document.body, {
+                    scale: 1,
+                    logging: false,
+                    backgroundColor: '#e0e5ec',
+                    width: window.innerWidth,
+                    height: window.innerHeight,
+                    x: Math.round(window.scrollX),
+                    y: Math.round(window.scrollY),
+                    ignoreElements: function(el) { return el.id === 'skeu-lens'; }
+                }).then(function(c) { snap = c; capturing = false; })
+                  .catch(function()  { capturing = false; });
+            }
+
             function showLens(x, y) {
+                if (!snap) return;
                 ensureEl();
+
+                // Position lens centered on cursor
                 lensEl.style.left = (x - LENS_D / 2) + 'px';
                 lensEl.style.top  = (y - LENS_D / 2) + 'px';
+
+                // Scale the snapshot and offset so cursor area is centered
+                var sw = window.innerWidth * ZOOM;
+                var sh = window.innerHeight * ZOOM;
+                var ox = LENS_D / 2 - x * ZOOM;
+                var oy = LENS_D / 2 - y * ZOOM;
+
+                snap.style.cssText =
+                    'position:absolute;border-radius:0;' +
+                    'width:' + sw + 'px;height:' + sh + 'px;' +
+                    'left:' + ox + 'px;top:' + oy + 'px;';
+
+                lensEl.innerHTML = '';
+                lensEl.appendChild(snap);
                 lensEl.classList.add('active');
                 isActive = true;
             }
@@ -5347,14 +5383,18 @@
                 lastX = e.clientX;
                 lastY = e.clientY;
                 hideLens();
+
                 if (e.target.closest(CLICKABLE)) {
+                    preCapture();   // starts only once, reuses result
                     idleTimer = setTimeout(function() {
                         showLens(lastX, lastY);
                     }, IDLE_MS);
+                } else {
+                    snap = null;    // left clickable area, discard
                 }
             });
 
-            document.addEventListener('scroll', hideLens);
+            document.addEventListener('scroll', function() { hideLens(); snap = null; });
             document.addEventListener('click', hideLens);
             document.addEventListener('mouseleave', hideLens);
         })();
