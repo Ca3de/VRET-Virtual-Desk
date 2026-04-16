@@ -5568,11 +5568,36 @@
           alert('html-to-image library is not loaded.');
           return;
         }
-        const dataUrl = await htmlToImage.toPng(section, {
-          pixelRatio: 2,
-          backgroundColor: '#e0e5ec',
-          cacheBust: true
+
+        // Bake computed styles inline so the export matches the browser.
+        // CSS !important overrides fix the dark inline styles on-screen,
+        // but html-to-image can't resolve the cascade — so we temporarily
+        // stamp the real computed values onto each element before capture.
+        const els = section.querySelectorAll('*');
+        const saved = [];
+        const props = ['background','backgroundColor','backgroundImage',
+                       'border','borderColor','borderRadius','boxShadow',
+                       'color','fontFamily'];
+        els.forEach(el => {
+          saved.push(el.getAttribute('style'));
+          const cs = window.getComputedStyle(el);
+          props.forEach(p => { el.style[p] = cs[p]; });
         });
+
+        let dataUrl;
+        try {
+          dataUrl = await htmlToImage.toPng(section, {
+            pixelRatio: 2,
+            backgroundColor: '#e0e5ec',
+            cacheBust: true
+          });
+        } finally {
+          // Restore originals no matter what
+          els.forEach((el, i) => {
+            if (saved[i] === null) el.removeAttribute('style');
+            else el.setAttribute('style', saved[i]);
+          });
+        }
         return downloadDataURL(dataUrl, base + '.png');
       }
     
