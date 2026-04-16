@@ -5564,55 +5564,58 @@
       if (format === 'png') {
         const section = document.querySelector(ATTENDANCE.sectionSelector);
         if (!section) return alert('Attendance section not found on the page.');
-        if (!window.htmlToImage) {
-          alert('html-to-image library is not loaded.');
+
+        // Scroll the section into view so it's fully visible
+        section.scrollIntoView({ behavior: 'instant', block: 'start' });
+        await new Promise(r => setTimeout(r, 300));
+
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: { displaySurface: 'browser' },
+            preferCurrentTab: true
+          });
+        } catch (e) {
+          if (e.name === 'NotAllowedError') return;
+          alert('Screen capture failed: ' + e.message);
           return;
         }
 
-        // Two-pass bake: read ALL computed styles first, THEN apply.
-        // One-pass mutates inline styles which breaks attribute-based CSS
-        // selectors for later elements in the same pass.
-        const els = [section, ...section.querySelectorAll('*')];
-        const saved = [];
-        const computed = [];
-        const props = [
-          'background','backgroundColor','backgroundImage',
-          'border','borderTop','borderBottom','borderLeft','borderRight',
-          'borderColor','borderRadius','boxShadow',
-          'color','fontFamily','fontSize','fontWeight',
-          'padding','margin','outline','display',
-          'textTransform','letterSpacing','lineHeight',
-          'width','maxWidth','minWidth'
-        ];
+        const track = stream.getVideoTracks()[0];
+        const settings = track.getSettings();
+        const videoW = settings.width;
+        const videoH = settings.height;
 
-        // Pass 1: read everything while cascade is intact
-        els.forEach(el => {
-          saved.push(el.getAttribute('style'));
-          const cs = window.getComputedStyle(el);
-          const vals = {};
-          props.forEach(p => { vals[p] = cs[p]; });
-          computed.push(vals);
-        });
+        // Grab a frame from the stream
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.muted = true;
+        await video.play();
+        await new Promise(r => setTimeout(r, 200));
 
-        // Pass 2: stamp computed values as inline styles
-        els.forEach((el, i) => {
-          props.forEach(p => { el.style[p] = computed[i][p]; });
-        });
+        // Draw the frame onto a canvas
+        const full = document.createElement('canvas');
+        full.width = videoW;
+        full.height = videoH;
+        const fCtx = full.getContext('2d');
+        fCtx.drawImage(video, 0, 0, videoW, videoH);
+        track.stop();
 
-        let dataUrl;
-        try {
-          dataUrl = await htmlToImage.toPng(section, {
-            pixelRatio: 2,
-            backgroundColor: '#e0e5ec',
-            cacheBust: true
-          });
-        } finally {
-          els.forEach((el, i) => {
-            if (saved[i] === null) el.removeAttribute('style');
-            else el.setAttribute('style', saved[i]);
-          });
-        }
-        return downloadDataURL(dataUrl, base + '.png');
+        // Crop to the section's bounding rect
+        const dpr = videoW / window.innerWidth;
+        const rect = section.getBoundingClientRect();
+        const cx = Math.round(rect.left * dpr);
+        const cy = Math.round(rect.top * dpr);
+        const cw = Math.round(rect.width * dpr);
+        const ch = Math.round(rect.height * dpr);
+
+        const cropped = document.createElement('canvas');
+        cropped.width = cw;
+        cropped.height = ch;
+        const cCtx = cropped.getContext('2d');
+        cCtx.drawImage(full, cx, cy, cw, ch, 0, 0, cw, ch);
+
+        return downloadDataURL(cropped.toDataURL('image/png'), base + '.png');
       }
     
       alert('Unsupported format. Choose xlsx, csv, or png.');
@@ -5702,8 +5705,7 @@
     <!-- For real Excel export (XLSX). If omitted, CSV still works -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
     
-    <!-- For PNG snapshot of the Attendance section -->
-    <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.min.js"></script>
+    <!-- PNG export uses Screen Capture API (getDisplayMedia) — no library needed -->
 
     <!-- ALPS Data Import Modal -->
     <div id="alps-import-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); z-index: 10000; justify-content: center; align-items: center;">
