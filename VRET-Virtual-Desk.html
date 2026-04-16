@@ -5564,12 +5564,16 @@
       if (format === 'png') {
         const section = document.querySelector(ATTENDANCE.sectionSelector);
         if (!section) return alert('Attendance section not found on the page.');
-        if (!window.html2canvas) {
-          alert('html2canvas is not loaded. Include the html2canvas <script> tag to export PNG.');
+        if (!window.htmlToImage) {
+          alert('html-to-image library is not loaded.');
           return;
         }
-        const canvas = await html2canvas(section, { backgroundColor: null, scale: 2, useCORS: true });
-        return downloadDataURL(canvas.toDataURL('image/png'), base + '.png');
+        const dataUrl = await htmlToImage.toPng(section, {
+          pixelRatio: 2,
+          backgroundColor: '#e0e5ec',
+          cacheBust: true
+        });
+        return downloadDataURL(dataUrl, base + '.png');
       }
     
       alert('Unsupported format. Choose xlsx, csv, or png.');
@@ -5660,7 +5664,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.20.2/dist/xlsx.full.min.js"></script>
     
     <!-- For PNG snapshot of the Attendance section -->
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.min.js"></script>
 
     <!-- ALPS Data Import Modal -->
     <div id="alps-import-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); z-index: 10000; justify-content: center; align-items: center;">
