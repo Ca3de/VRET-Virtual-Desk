@@ -2119,10 +2119,9 @@
         }
         #skeu-lens.active { opacity: 1; }
 
-        /* The canvas inside transitions from 1x to zoomed */
-        #skeu-lens canvas {
+        /* The cloned content inside transitions from 1x to zoomed */
+        #skeu-lens > div {
             transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            transform-origin: center center;
         }
     </style>
 </head>
@@ -5319,8 +5318,6 @@
             var isActive = false;
             var lastX = 0, lastY = 0;
             var lensEl = null;
-            var snap = null;          // captured canvas
-            var capturing = false;
             var IDLE_MS = 2000;
             var LENS_D = 400;
             var ZOOM = 1.25;
@@ -5336,57 +5333,39 @@
                 document.body.appendChild(lensEl);
             }
 
-            // Pre-capture the viewport as soon as cursor lands on a clickable
-            function preCapture() {
-                if (capturing || snap || !window.html2canvas) return;
-                capturing = true;
-                html2canvas(document.body, {
-                    scale: 1,
-                    logging: false,
-                    backgroundColor: '#e0e5ec',
-                    width: window.innerWidth,
-                    height: window.innerHeight,
-                    x: Math.round(window.scrollX),
-                    y: Math.round(window.scrollY),
-                    ignoreElements: function(el) { return el.id === 'skeu-lens'; }
-                }).then(function(c) { snap = c; capturing = false; })
-                  .catch(function()  { capturing = false; });
-            }
-
             function showLens(x, y) {
-                if (!snap) return;
                 ensureEl();
+                var r = LENS_D / 2;
+                var sY = window.scrollY;
 
-                // Position lens centered on cursor
-                lensEl.style.left = (x - LENS_D / 2) + 'px';
-                lensEl.style.top  = (y - LENS_D / 2) + 'px';
+                lensEl.style.left = (x - r) + 'px';
+                lensEl.style.top  = (y - r) + 'px';
 
-                // Place canvas at viewport size, offset so cursor area
-                // sits at the center of the lens circle
-                var vw = window.innerWidth;
-                var vh = window.innerHeight;
-                var ox = LENS_D / 2 - x;
-                var oy = LENS_D / 2 - y;
-
-                // transform-origin is the cursor point relative to the canvas
-                snap.style.cssText =
-                    'position:absolute;border-radius:0;' +
-                    'width:' + vw + 'px;height:' + vh + 'px;' +
-                    'left:' + ox + 'px;top:' + oy + 'px;' +
+                // Clone the real DOM so it renders identically
+                var wrap = document.createElement('div');
+                wrap.style.cssText =
+                    'position:absolute;pointer-events:none;' +
+                    'width:' + document.documentElement.scrollWidth + 'px;' +
+                    'left:' + (r - x) + 'px;' +
+                    'top:' + (r - y - sY) + 'px;' +
                     'transform:scale(1);' +
-                    'transform-origin:' + x + 'px ' + y + 'px;';
+                    'transform-origin:' + x + 'px ' + (y + sY) + 'px;';
+
+                ['.executive-header', '.navigation-bar', '.main-content', '.luxury-footer'].forEach(function(sel) {
+                    var el = document.querySelector(sel);
+                    if (el) wrap.appendChild(el.cloneNode(true));
+                });
 
                 lensEl.innerHTML = '';
-                lensEl.appendChild(snap);
+                lensEl.appendChild(wrap);
                 lensEl.classList.add('active');
                 isActive = true;
 
-                // Transition to zoomed — double rAF ensures the browser
-                // registers scale(1) first so the transition plays
+                // Animate scale(1) → scale(ZOOM)
                 requestAnimationFrame(function() {
                 requestAnimationFrame(function() {
-                    if (!isActive || !snap) return;
-                    snap.style.transform = 'scale(' + ZOOM + ')';
+                    if (!isActive) return;
+                    wrap.style.transform = 'scale(' + ZOOM + ')';
                 });
                 });
             }
@@ -5402,18 +5381,14 @@
                 lastX = e.clientX;
                 lastY = e.clientY;
                 hideLens();
-
                 if (e.target.closest(CLICKABLE)) {
-                    preCapture();   // starts only once, reuses result
                     idleTimer = setTimeout(function() {
                         showLens(lastX, lastY);
                     }, IDLE_MS);
-                } else {
-                    snap = null;    // left clickable area, discard
                 }
             });
 
-            document.addEventListener('scroll', function() { hideLens(); snap = null; });
+            document.addEventListener('scroll', hideLens);
             document.addEventListener('click', hideLens);
             document.addEventListener('mouseleave', hideLens);
         })();
