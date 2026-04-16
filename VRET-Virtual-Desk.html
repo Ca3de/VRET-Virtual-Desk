@@ -2101,29 +2101,13 @@
             cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='6' fill='%23e17055'/%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='%23e17055' stroke-width='1' opacity='0.4'/%3E%3C/svg%3E") 10 10, pointer !important;
         }
 
-        /* Zoom-in effect after 2s hover on clickable items */
-        .skeu-zoom {
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        /* Page-level magnifying lens effect on idle hover */
+        body {
+            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            overflow-x: hidden;
         }
-        .skeu-zoom-active {
-            transform: scale(1.015);
-            box-shadow: 10px 10px 20px #b8c0cc, -10px -10px 20px #ffffff !important;
-        }
-        /* Prevent zoom on fixed/sticky elements, nav items, small inline elements */
-        .executive-header.skeu-zoom-active,
-        .navigation-bar.skeu-zoom-active,
-        .nav-item.skeu-zoom-active,
-        .quick-actions.skeu-zoom-active,
-        button.skeu-zoom-active,
-        a.skeu-zoom-active:not(.luxury-link),
-        .remove-task.skeu-zoom-active,
-        .link-favorite.skeu-zoom-active,
-        .favorite-star.skeu-zoom-active,
-        span.skeu-zoom-active,
-        input.skeu-zoom-active,
-        select.skeu-zoom-active {
-            transform: none !important;
-            box-shadow: unset !important;
+        body.skeu-magnify {
+            transform: scale(1.045);
         }
     </style>
 </head>
@@ -5314,32 +5298,54 @@
             loadAlpsDataOnPageLoad();
         }
 
-        // ========= CUSTOM CURSOR: 2-SECOND HOVER ZOOM =========
-        (function initHoverZoom() {
-            let hoverTimer = null;
-            let currentTarget = null;
+        // ========= CUSTOM CURSOR: PAGE MAGNIFY ON IDLE HOVER =========
+        (function initPageMagnify() {
+            let idleTimer = null;
+            let isZoomed = false;
+            const IDLE_MS = 2000;
+            const clickableSelector = 'a, button, [onclick], .nav-item, .luxury-link, .quick-action-btn, .add-task-btn, .calc-btn, .remove-task, .modal-button, .favorite-item, .suggestion-item, .metric-card[onclick], .favorite-star, .link-favorite, select, input[type="checkbox"]';
 
-            // Elements that should get the zoom effect (cards, panels)
-            const zoomSelector = '.metric-card, .luxury-card, .task-section, .process-item, .favorite-item, .iol-metric-card, .hero-banner, .container-search-section, .priority-queue-section, .workforce-calculator, .summary-section';
+            function applyZoom(x, y) {
+                // Set transform-origin to cursor position so the page
+                // zooms toward where you're looking, pushing content
+                // away from that point (left cursor → page shifts right, etc.)
+                const xPct = (x / window.innerWidth) * 100;
+                const yPct = ((y + window.scrollY) / document.documentElement.scrollHeight) * 100;
+                document.body.style.transformOrigin = xPct + '% ' + yPct + '%';
+                document.body.classList.add('skeu-magnify');
+                isZoomed = true;
+            }
 
-            document.addEventListener('mouseenter', function(e) {
-                const el = e.target.closest(zoomSelector);
-                if (!el || el === currentTarget) return;
-                clearTimeout(hoverTimer);
-                currentTarget = el;
-                el.classList.add('skeu-zoom');
-                hoverTimer = setTimeout(function() {
-                    el.classList.add('skeu-zoom-active');
-                }, 2000);
-            }, true);
+            function removeZoom() {
+                clearTimeout(idleTimer);
+                if (isZoomed) {
+                    document.body.classList.remove('skeu-magnify');
+                    isZoomed = false;
+                }
+            }
 
-            document.addEventListener('mouseleave', function(e) {
-                const el = e.target.closest(zoomSelector);
-                if (!el) return;
-                clearTimeout(hoverTimer);
-                el.classList.remove('skeu-zoom-active');
-                currentTarget = null;
-            }, true);
+            let lastX = 0, lastY = 0;
+
+            document.addEventListener('mousemove', function(e) {
+                lastX = e.clientX;
+                lastY = e.clientY;
+                // Any mouse movement cancels the zoom
+                removeZoom();
+
+                // Check if we're over a clickable element
+                const clickable = e.target.closest(clickableSelector);
+                if (clickable) {
+                    clearTimeout(idleTimer);
+                    idleTimer = setTimeout(function() {
+                        applyZoom(lastX, lastY);
+                    }, IDLE_MS);
+                }
+            });
+
+            // Cancel on scroll, click, or mouse leaving the window
+            document.addEventListener('scroll', removeZoom);
+            document.addEventListener('click', removeZoom);
+            document.addEventListener('mouseleave', removeZoom);
         })();
 
 	// --- REPLACE existing exportData() with this ---
