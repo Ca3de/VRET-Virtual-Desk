@@ -5562,65 +5562,239 @@
       }
 
       if (format === 'png') {
-        const section = document.querySelector(ATTENDANCE.sectionSelector);
-        if (!section) return alert('Attendance section not found on the page.');
-
-        // Scroll the section into view so it's fully visible
-        section.scrollIntoView({ behavior: 'instant', block: 'start' });
-        await new Promise(r => setTimeout(r, 300));
-
-        let stream;
-        try {
-          stream = await navigator.mediaDevices.getDisplayMedia({
-            video: { displaySurface: 'browser' },
-            preferCurrentTab: true
-          });
-        } catch (e) {
-          if (e.name === 'NotAllowedError') return;
-          alert('Screen capture failed: ' + e.message);
-          return;
-        }
-
-        const track = stream.getVideoTracks()[0];
-        const settings = track.getSettings();
-        const videoW = settings.width;
-        const videoH = settings.height;
-
-        // Grab a frame from the stream
-        const video = document.createElement('video');
-        video.srcObject = stream;
-        video.muted = true;
-        await video.play();
-        await new Promise(r => setTimeout(r, 200));
-
-        // Draw the frame onto a canvas
-        const full = document.createElement('canvas');
-        full.width = videoW;
-        full.height = videoH;
-        const fCtx = full.getContext('2d');
-        fCtx.drawImage(video, 0, 0, videoW, videoH);
-        track.stop();
-
-        // Crop to the section's bounding rect
-        const dpr = videoW / window.innerWidth;
-        const rect = section.getBoundingClientRect();
-        const cx = Math.round(rect.left * dpr);
-        const cy = Math.round(rect.top * dpr);
-        const cw = Math.round(rect.width * dpr);
-        const ch = Math.round(rect.height * dpr);
-
-        const cropped = document.createElement('canvas');
-        cropped.width = cw;
-        cropped.height = ch;
-        const cCtx = cropped.getContext('2d');
-        cCtx.drawImage(full, cx, cy, cw, ch, 0, 0, cw, ch);
-
-        return downloadDataURL(cropped.toDataURL('image/png'), base + '.png');
+        // Custom canvas report — no screen capture, only reads data
+        // from known DOM fields and renders a designed PNG.
+        await document.fonts.ready;
+        const dataUrl = renderAttendanceReport();
+        return downloadDataURL(dataUrl, base + '.png');
       }
     
       alert('Unsupported format. Choose xlsx, csv, or png.');
     }
-    
+
+    // ========= CUSTOM CANVAS ATTENDANCE REPORT =========
+    // Only reads specific DOM fields — no screen capture, no full-page snapshot
+    function gatherReportData() {
+      const read = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return '';
+        return (el.value || el.textContent || '').toString().trim();
+      };
+      const strip = (s) => s.replace(/^=\s*/, '');
+      return {
+        time:      read('attendance-time'),
+        date:      read('attendance-date').replace(/^Date:\s*/i, ''),
+        volume:    read('volume-forecast'),
+        scheduled: read('scheduled'),
+        absence:   read('absence'),
+        actual:    read('actual'),
+        vto:       read('vto'),
+        expHC:     strip(read('expectedHeadcount')),
+        attRate:   strip(read('attendanceRate')),
+        volSum:    read('volume-summary'),
+        hcSum:     read('hc-summary'),
+        attSum:    read('attendance-summary'),
+        rows: [
+          { type: 'Amazon Ready (Flex)', actual: read('flexActual'), alps: read('flexAlps'), result: read('flexResult') },
+          { type: 'VET',                 actual: read('vetActual'),  alps: read('vetAlps'),  result: read('vetResult')  },
+          { type: 'Labor Share',         actual: read('lsActual'),   alps: read('lsAlps'),   result: read('lsResult')   },
+        ]
+      };
+    }
+
+    function renderAttendanceReport() {
+      const d = gatherReportData();
+      const W = 1400, H = 1180, DPR = 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = W * DPR;
+      canvas.height = H * DPR;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(DPR, DPR);
+
+      // Palette
+      const BG = '#e0e5ec';
+      const DARK = '#b8c0cc';
+      const LIGHT = '#ffffff';
+      const CORAL = '#e17055';
+      const TEXT = '#2c3e50';
+      const MUTED = '#636e72';
+      const GREEN = '#27ae60';
+
+      // Helpers
+      const roundRect = (x, y, w, h, r) => {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      };
+      const raisedPanel = (x, y, w, h, r = 22) => {
+        // dark shadow (bottom-right)
+        ctx.save();
+        ctx.shadowColor = DARK; ctx.shadowBlur = 14;
+        ctx.shadowOffsetX = 6;  ctx.shadowOffsetY = 6;
+        ctx.fillStyle = BG;
+        roundRect(x, y, w, h, r); ctx.fill();
+        ctx.restore();
+        // light shadow (top-left)
+        ctx.save();
+        ctx.shadowColor = LIGHT; ctx.shadowBlur = 14;
+        ctx.shadowOffsetX = -6;  ctx.shadowOffsetY = -6;
+        ctx.fillStyle = BG;
+        roundRect(x, y, w, h, r); ctx.fill();
+        ctx.restore();
+      };
+      const insetChip = (x, y, w, h, r = 10) => {
+        ctx.save();
+        roundRect(x, y, w, h, r);
+        ctx.fillStyle = '#d4dae4';
+        ctx.fill();
+        // inset highlight (top-left dark, bottom-right light)
+        ctx.save(); ctx.clip();
+        ctx.strokeStyle = DARK; ctx.lineWidth = 4;
+        ctx.shadowColor = DARK; ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+        roundRect(x, y, w, h, r); ctx.stroke();
+        ctx.restore();
+        ctx.restore();
+      };
+      const pill = (x, y, w, h, fill) => {
+        ctx.save();
+        ctx.shadowColor = DARK; ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 3;
+        ctx.fillStyle = fill;
+        roundRect(x, y, w, h, h / 2); ctx.fill();
+        ctx.restore();
+      };
+      const text = (str, x, y, opts = {}) => {
+        ctx.fillStyle = opts.color || TEXT;
+        ctx.font = opts.font || '500 14px Inter, sans-serif';
+        ctx.textAlign = opts.align || 'left';
+        ctx.textBaseline = opts.baseline || 'alphabetic';
+        ctx.fillText(str ?? '', x, y);
+      };
+
+      // ===== Background =====
+      ctx.fillStyle = BG;
+      ctx.fillRect(0, 0, W, H);
+
+      // ===== Header =====
+      text('Attendance Dashboard (VRETS)', 60, 72, {
+        color: CORAL, font: '700 34px Inter, sans-serif'
+      });
+      text('IND8 Executive Operations Center · Exported ' + new Date().toLocaleString(),
+        60, 100, { color: MUTED, font: '400 13px Inter, sans-serif' });
+
+      // ===== Row 1: Time card + Volume Forecast =====
+      const r1 = { y: 140, h: 140 };
+      // Time panel (left, 1/3 width)
+      raisedPanel(60, r1.y, 420, r1.h);
+      text('CURRENT TIME', 90, r1.y + 38,
+        { color: CORAL, font: '600 11px Inter, sans-serif' });
+      text(d.time || '--:--', 90, r1.y + 92,
+        { color: CORAL, font: '700 44px JetBrains Mono, monospace' });
+      text(d.date || '—', 90, r1.y + 118,
+        { color: MUTED, font: '500 12px Inter, sans-serif' });
+
+      // Volume forecast panel (right, 2/3 width)
+      raisedPanel(500, r1.y, 840, r1.h);
+      text('VOLUME FORECAST', 530, r1.y + 38,
+        { color: CORAL, font: '600 11px Inter, sans-serif' });
+      const vol = d.volume === '' ? '—' : Number(d.volume).toLocaleString();
+      text(vol, 530, r1.y + 100, { color: TEXT, font: '700 48px Inter, sans-serif' });
+
+      // ===== Row 2: Headcount & Attendance =====
+      const r2 = { y: 310, h: 240 };
+      raisedPanel(60, r2.y, 1280, r2.h);
+      text('HEADCOUNT & ATTENDANCE', 90, r2.y + 38,
+        { color: CORAL, font: '600 12px Inter, sans-serif' });
+
+      const statCell = (x, y, label, value, valueColor = TEXT) => {
+        text(label, x, y,
+          { color: MUTED, font: '600 10px Inter, sans-serif' });
+        text(value || '—', x, y + 36,
+          { color: valueColor, font: '700 28px Inter, sans-serif' });
+      };
+      // Row 1 of stats
+      statCell(90,  r2.y + 90,  'SCHEDULED',          d.scheduled);
+      statCell(350, r2.y + 90,  'ABSENCE FORECAST',   d.absence);
+      statCell(610, r2.y + 90,  'EXPECTED HC',        d.expHC, CORAL);
+      // Row 2 of stats
+      statCell(90,  r2.y + 170, 'ASSOCIATES PRESENT', d.actual);
+      statCell(350, r2.y + 170, '+ VTO',              d.vto);
+      statCell(610, r2.y + 170, 'ATTENDANCE RATE',    d.attRate, GREEN);
+
+      // ===== Row 3: Forecast vs Actual table =====
+      const r3 = { y: 580, h: 290 };
+      raisedPanel(60, r3.y, 1280, r3.h);
+      text('FORECAST vs ACTUAL ANALYSIS', 90, r3.y + 38,
+        { color: CORAL, font: '600 12px Inter, sans-serif' });
+
+      // Table header
+      const tableX = 90, tableY = r3.y + 80;
+      const cols = [
+        { title: 'TYPE',          x: 0,   w: 340, align: 'left'   },
+        { title: 'ACTUAL',        x: 380, w: 180, align: 'center' },
+        { title: 'FORECAST/ALPS', x: 580, w: 200, align: 'center' },
+        { title: 'RESULT',        x: 800, w: 390, align: 'left'   },
+      ];
+      // Header row background (inset)
+      ctx.fillStyle = '#d4dae4';
+      ctx.fillRect(tableX, tableY, 1210, 34);
+      cols.forEach(c => {
+        text(c.title, tableX + c.x + (c.align === 'center' ? c.w / 2 : 12), tableY + 22,
+          { color: MUTED, font: '600 10px Inter, sans-serif', align: c.align });
+      });
+      // Table rows
+      d.rows.forEach((row, i) => {
+        const y = tableY + 60 + i * 54;
+        // Separator
+        ctx.strokeStyle = 'rgba(163, 177, 198, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(tableX, y + 30); ctx.lineTo(tableX + 1210, y + 30);
+        ctx.stroke();
+
+        text(row.type, tableX + 12, y + 15, { color: TEXT, font: '600 16px Inter, sans-serif' });
+        text(row.actual || '—', tableX + cols[1].x + cols[1].w / 2, y + 15,
+          { color: TEXT, font: '500 15px Inter, sans-serif', align: 'center' });
+        text(row.alps || '—', tableX + cols[2].x + cols[2].w / 2, y + 15,
+          { color: TEXT, font: '500 15px Inter, sans-serif', align: 'center' });
+        const res = row.result || '—';
+        // Colour green/red based on content
+        const resColor = /loss/i.test(res) ? '#e74c3c' : (res === '—' ? MUTED : GREEN);
+        text(res, tableX + cols[3].x + 12, y + 15,
+          { color: resColor, font: '600 14px Inter, sans-serif' });
+      });
+
+      // ===== Row 4: Summary tiles =====
+      const r4 = { y: 900, h: 200 };
+      const tileW = (1280 - 40) / 3; // 3 tiles with 20px gaps
+      const summary = [
+        { label: 'VOLUME FORECAST', value: d.volSum || '—',  color: CORAL },
+        { label: 'EXPECTED HC',     value: d.hcSum  || '—',  color: TEXT  },
+        { label: 'ATTENDANCE',      value: d.attSum || '—%', color: GREEN },
+      ];
+      summary.forEach((s, i) => {
+        const x = 60 + i * (tileW + 20);
+        raisedPanel(x, r4.y, tileW, r4.h);
+        text(s.label, x + tileW / 2, r4.y + 60,
+          { color: MUTED, font: '600 12px Inter, sans-serif', align: 'center' });
+        text(s.value, x + tileW / 2, r4.y + 130,
+          { color: s.color, font: '700 44px Inter, sans-serif', align: 'center' });
+      });
+
+      // ===== Footer =====
+      text('Generated by IND8 Executive Operations Center', 60, H - 40,
+        { color: MUTED, font: '400 11px Inter, sans-serif' });
+      text(new Date().toLocaleString(), W - 60, H - 40,
+        { color: MUTED, font: '400 11px Inter, sans-serif', align: 'right' });
+
+      return canvas.toDataURL('image/png');
+    }
+
     // ========= DATA GATHERING =========
     function getText(id) {
       const el = document.getElementById(id);
